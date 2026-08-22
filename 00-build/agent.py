@@ -45,6 +45,7 @@ except ImportError:
 
 # --- Bounds (your M5 deliverable: tune these and justify them) ----------------
 MODEL = os.environ.get("CORTEX_MODEL", "gpt-4o-mini")
+FRONTIER_MODEL = os.environ.get("CORTEX_FRONTIER_MODEL", "gpt-4o")
 MAX_ITERATIONS = int(os.environ.get("CORTEX_MAX_ITERATIONS", "8"))
 MAX_REVISIONS = int(os.environ.get("CORTEX_MAX_REVISIONS", "2"))
 COST_CAP_USD = float(os.environ.get("CORTEX_COST_CAP_USD", "0.50"))
@@ -155,6 +156,8 @@ def run(which: str = "happy") -> None:
     source_log: list[str] = [task["body"]]
     revisions = 0
     last_draft = ""
+    current_model = MODEL
+    model_escalated = False
 
     for step in range(1, MAX_ITERATIONS + 1):
         if bounds.over_cap():
@@ -165,7 +168,7 @@ def run(which: str = "happy") -> None:
             return
 
         resp = client.chat.completions.create(
-            model=MODEL, messages=messages, tools=TOOL_SCHEMAS)
+            model=current_model, messages=messages, tools=TOOL_SCHEMAS)
         bounds.add(resp.usage)
         msg = resp.choices[0].message
 
@@ -188,7 +191,7 @@ def run(which: str = "happy") -> None:
         print(f"\n[step {step}] PROPOSED OUTPUT:\n{proposed}")
 
         banner("CRITIC, independent validation")
-        verdict = review(client, MODEL, proposed, "\n".join(source_log))
+        verdict = review(client, current_model, proposed, "\n".join(source_log))
         # Estimate critic spend too.
         bounds.cost += (verdict["_usage"]["prompt"] * PRICE_IN
                         + verdict["_usage"]["completion"] * PRICE_OUT) / 1_000_000
@@ -203,15 +206,30 @@ def run(which: str = "happy") -> None:
             return
 
         if revisions >= MAX_REVISIONS:
-            reason = f"validator rejected {MAX_REVISIONS}x (revision cap)"
-            banner(f"REVISION CAP hit ({MAX_REVISIONS}). Escalating to a human "
-                   f"instead of looping. Run cost ≈ ${bounds.cost:.4f}")
+            if not model_escalated:
+                model_escalated = True
+                current_model = FRONTIER_MODEL
+                revisions = 0
+                banner(f"REVISION CAP hit ({MAX_REVISIONS}) on {MODEL}. Escalating "
+                       f"the MODEL to {FRONTIER_MODEL} for {MAX_REVISIONS} more "
+                       f"attempts before giving up. Run cost ≈ ${bounds.cost:.4f}")
+                messages.append(msg)
+                messages.append({"role": "user", "content":
+                                 "A validator rejected that for these reasons: "
+                                 f"{verdict['reasons']}. Fix it or escalate."})
+                continue
+
+            reason = (f"validator rejected {MAX_REVISIONS}x on {MODEL} and "
+                      f"{MAX_REVISIONS}x more on {FRONTIER_MODEL} (revision cap x2)")
+            banner(f"REVISION CAP hit again on {FRONTIER_MODEL}. Escalating to a "
+                   f"human instead of looping. Run cost ≈ ${bounds.cost:.4f}")
             emit_deliverable(which, last_draft, accepted=False,
                              reason=reason, cost=bounds.cost)
             return
 
         revisions += 1
-        print(f"\n-> critic rejected; revision {revisions}/{MAX_REVISIONS}")
+        print(f"\n-> critic rejected; revision {revisions}/{MAX_REVISIONS} "
+              f"(model: {current_model})")
         messages.append(msg)
         messages.append({"role": "user", "content":
                          "A validator rejected that for these reasons: "
