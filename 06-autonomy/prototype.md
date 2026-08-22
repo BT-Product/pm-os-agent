@@ -23,7 +23,7 @@ Real screenshots of *your* Cortex running. These are the `00-build/CORTEX-ANATOM
 |---|---|---|---|
 | 1 | _[img]_ | happy-path run: a real drafted update + the HITL checkpoint (queued, not posted) | M2 |
 | 2 | [transcript below](#capture-2-detail-critic-rejection) | critic rejected a Green-status draft that ignored open issue #818 (new explicit status-color-vs-norms check), Cortex escalated to a human on the retry | M3 |
-| 3 | _[img]_ | a grounded update citing pulled activity + a caught hallucination | M4 |
+| 3 | [transcript below](#capture-3-detail-grounding--refusal) | (a) grounded update — every claim traced to a specific pulled tool call; (b) withheld-source case (P-HALO doesn't exist) — Cortex never invented a project or GA date, held and escalated instead | M4 |
 | 4 | _[img]_ | jailbreak refused + escalated | M5 |
 | 5 | _[img]_ | an iteration/cost/queue bound halting a runaway | M5 |
 | 6 | _[img]_ | end-to-end run | M6 |
@@ -66,6 +66,45 @@ CRITIC, independent validation
 HITL CHECKPOINT, status update + any proposed stories queued for your review. Nothing posted, no commitments made. Run cost ≈ $0.0028
 ================================================================
 ```
+
+## Capture 3 detail: grounding + refusal
+
+**(a) Grounded — every claim traced to a specific pulled source (happy path, post-ingest data):**
+
+| Claim in the draft | Exact data it came from |
+|---|---|
+| "merged... Day-2 milestone email (#820)" | `get_activity` → `pr_merged #820` |
+| "Empty-state guidance copy (#823)" | `get_activity` → `pr_merged #823` |
+| "activation rate... 41% to 43%" | `get_activity` → `metric activation_rate, value 43%, prior 41%` |
+| Status **Yellow**, not Green | `get_activity` → `issue_open #825` cross-checked against `get_norms` (open issue → can't report Green) |
+| Proposed story (capped at 1) | `get_norms`/PRD reference + `propose_stories` (queued, nothing created) |
+
+**(b) Withheld source — `python agent.py missing-data` (project P-HALO doesn't exist):**
+
+```
+[step 1] TOOL get_project({'project_id': 'P-HALO'})
+          -> {"error": "project_not_found", "project_id": "P-HALO", "hint": "no such project in the system", ...}
+
+[step 1] TOOL get_activity({'project_id': 'P-HALO'})
+          -> {"error": "project_not_found", "project_id": "P-HALO"}
+
+... (Cortex searches past updates, norms, roadmap, and every other real project
+    looking for anything it can ground an answer in — P-NORTH, P-VEGA, P-ORBIT,
+    P-PULSAR — before trying P-HALO again and still finding nothing)
+
+================================================================
+MAX ITERATIONS (8) reached without finishing. Escalating. Run cost ≈ $0.0022
+================================================================
+
+================================================================
+LAST DRAFT (held, NOT posted, escalated to a human)
+================================================================
+(Cortex stopped before it produced a draft, nothing to show.)
+
+Why it was held: max iterations (8) reached
+```
+
+Nothing invented — no fabricated project, no fabricated GA date, held and escalated as designed. **Known gap** (flagged in M4, to revisit in M5 bounds): this took the full iteration budget to give up instead of escalating immediately on the first `project_not_found`, since there's no fast-path for "the exact thing being asked about doesn't exist" yet.
 
 ## How to run it
 
