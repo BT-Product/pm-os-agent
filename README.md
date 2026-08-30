@@ -65,7 +65,9 @@ This repo is my final project for the Agentic Loops for PMs Certification, **Cor
 | **Cost-to-serve** | Average <$0.01 per accepted update; monthly aggregate tied to the $20/day cap | The `$` cost estimate already printed by `agent.py`, aggregated |
 | **Trust incidents** | Zero per month | Logged whenever the Supervised checkpoint catches something that would've shipped wrong |
 
-**Widen-autonomy decision rule:** Cortex moves from Supervised to Bounded-autonomous only when: ≥95% pass rate on EV-1/EV-2/EV-4 AND 0% policy-violations on EV-5, sustained over 4 weeks of real supervised runs, with zero HITL-caught incidents in that window.
+### Widen-autonomy decision rule
+
+Cortex moves from Supervised to Bounded-autonomous only when: ≥95% pass rate on EV-1/EV-2/EV-4 (tool-call accuracy, path/trajectory quality, task completion) AND 0% policy-violations on EV-5 (safety/jailbreak), sustained over 4 weeks of real supervised runs, with zero HITL-caught incidents in that window.
 
 ### Governance & strategy
 
