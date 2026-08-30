@@ -11,7 +11,7 @@ _Autonomy is a product decision per user, not one global setting._
 | Segment | Desired autonomy | Why |
 |---|---|---|
 | Me, as the PM who built Cortex | Supervised | Reversibility and blast radius stay low-trust regardless of who's watching — a mistaken company-wide send is hard to reverse and seen by a lot of people — so every item still gets approved before it goes out, even though I have the most context to trust Cortex's pulled data. |
-| Exec stakeholder (only wants the final summary) | Bounded-autonomous | Never sees drafts or intermediate steps — they trust my supervised review as their checkpoint, so nothing below the line needs to pause and wait on them personally. |
+| Exec stakeholder (only wants the final summary) | Bounded-autonomous | Never sees drafts or intermediate steps — they trust my supervised review as their checkpoint, so nothing below the line needs to pause and wait on them personally. That checkpoint doesn't depend on one person's attention: another PM on the team is the named backup reviewer for when I'm unavailable, and exec-facing updates get an independent weekly spot-check on top of my normal review, catching drift my own review might miss. |
 | Another team's PM (inherits Cortex, no product context) | Assisted | Lacks the context to catch a subtle wrong claim, so shadow (Cortex's output never used) would teach them nothing; assisted keeps them doing the task themselves while Cortex only suggests, building the calibration to move up to supervised later. |
 
 ## Trust Ladder
@@ -23,7 +23,7 @@ _Autonomy is a product decision per user, not one global setting._
 ## Deployment plan
 
 - **Runtime:** Serverless — fires on the hook/cron event, nothing running between invocations. An always-on server would waste resources for an event-driven agent; a managed agent platform is unnecessary overhead at this scale.
-- **Operator / on-call owner:** Me, as the PM, is the primary owner for product-level issues (a draft looks wrong, the critic seems to be loosening, an escalation needs judgment) since I'm already reviewing every item at the Supervised checkpoint. A named engineer is the escalation path for infrastructure-level failures (function errors, expired API key, deploy issues, connection failures).
+- **Operator / on-call owner:** Me, as the PM, is the primary owner for product-level issues (a draft looks wrong, the critic seems to be loosening, an escalation needs judgment) since I'm already reviewing every item at the Supervised checkpoint. Infrastructure-level failures (function errors, expired API key, deploy issues, connection failures) go to a formal weekly engineering on-call rotation with PagerDuty-style paging and a 30-minute acknowledgment SLA — not just a name on a doc — so a fail-closed halt overnight actually gets seen before morning.
 - **Rollback:** Revert to the previous code version (git revert + redeploy) for an actual bug/regression in the build; drop the dial a rung (e.g. a bounded-autonomous segment gets pushed back to supervised) for a trust regression — downgrade before diagnosing.
 - **Monitoring:** A dashboard reading `run-output/` + the cost estimates already printed by `agent.py`. Escalation rate = % of runs tagged "HELD, escalated" vs. "accepted"; cost-to-serve = the `$` estimate aggregated across runs; eval pass % = from replaying the M5 eval suite (EV-1 to EV-5) on a regular cadence; trust incidents = logged whenever the Supervised checkpoint catches something that would've shipped wrong.
 
@@ -31,7 +31,7 @@ _Autonomy is a product decision per user, not one global setting._
 
 | Metric | Target | How captured |
 |---|---|---|
-| **Outcome** — % of status updates that ship with zero manual rewrite | 70% | Tracked from edited vs. unedited drafts in `run-output/` |
+| **Outcome** — % of status updates that ship with zero manual rewrite | 70% (hypothesis — measured only on mock fixtures so far; treated as unproven until validated against real traffic once the Jira/GitHub connector replaces the fixtures, gated on the same EV-1/EV-2/EV-4 re-pass in Strategy below) | Tracked from edited vs. unedited drafts in `run-output/` |
 | **Cost-to-serve** | Average <$0.01 per accepted update; monthly aggregate tied to the $20/day cap | The `$` cost estimate already printed by `agent.py`, aggregated |
 | **Trust incidents** | Zero per month | Logged whenever the Supervised checkpoint catches something that would've shipped wrong |
 
