@@ -45,8 +45,6 @@ _`state` is always-on. `connectors` only if you already have one wired (e.g. a J
 | **Subagents** (independent check when the loop can't grade itself) | Needed, and already live: the critic is an independent subagent that validates the draft rather than Cortex grading its own work. See M3 orchestration-map.md for more detail. |
 | **State tracking** | See §4 above — per-project persistence of last week's update, roadmap, and norms; no cross-project leakage. |
 
-> Context plan (M4) and the hand-off to bounds & evals (M5) come in later modules — you'll add them to their own deliverables then, not here.
-
 ## Link to live loop
 
-_[path to your agent in `00-build/`]_
+The loop lives in [`00-build/agent.py`](../00-build/agent.py), with the critic in [`00-build/critic.py`](../00-build/critic.py). It runs locally, so there's no hosted link.

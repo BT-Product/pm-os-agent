@@ -15,9 +15,9 @@ Cortex is a PM chief-of-staff agent that turns a plain-English task ("assemble t
 - **Repo / config:** `00-build/` (`agent.py`, `tools.py`, `prompts.py`, `critic.py`, `fixtures/`)
 - **Live link:** none (local build)
 
-## Screenshots (required, collected M2 to M6)
+## Runs (collected M2 to M6)
 
-Real screenshots of *your* Cortex running. These are the `00-build/CORTEX-ANATOMY.md` set and they are required, a link alone is not enough.
+Transcripts from real Cortex runs, one or more per module, collected as the build progressed.
 
 | # | Screenshot | What it shows | From |
 |---|---|---|---|
